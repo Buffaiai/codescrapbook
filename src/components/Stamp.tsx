@@ -1,9 +1,8 @@
 import type { StampItem } from '../types';
 
-/** 印章：红色/深色油墨盖章效果，带"啪"落下动画 */
+/** 印章：油墨盖章效果，带"啪"落下动画 */
 export default function Stamp({ item }: { item: StampItem }) {
-  const isRed = item.text === '搞定';
-  const color = isRed ? '#c0392b' : '#2c3e50';
+  const color = item.color ?? (item.text === '搞定' ? '#c0392b' : '#2c3e50');
   return (
     <div
       className="stamp-anim"

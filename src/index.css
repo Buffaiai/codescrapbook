@@ -139,3 +139,69 @@ button {
     transform: translateY(0);
   }
 }
+
+/* ===== 手机端：抽屉改为可收起的底部/侧边抽屉，画布自适应 ===== */
+.sb-mobile-tabs {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .sb-toolbar {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-wrap: wrap;
+  }
+  .sb-logo {
+    display: none !important;
+  }
+  .sb-body {
+    position: relative;
+    overflow: hidden;
+  }
+  .sb-canvas {
+    width: 100%;
+  }
+  .sb-drawer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100% !important;
+    height: 46% !important;
+    max-height: 320px;
+    border-right: none !important;
+    border-top: 2px dashed rgba(120, 100, 60, 0.3);
+    border-radius: 14px 14px 0 0;
+    transform: translateY(110%);
+    transition: transform 0.25s ease;
+    z-index: 60;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+  }
+  .sb-drawer.sb-open {
+    transform: translateY(0);
+  }
+  .sb-side {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80% !important;
+    max-width: 320px;
+    transform: translateX(110%);
+    transition: transform 0.25s ease;
+    z-index: 60;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  }
+  .sb-side.sb-open {
+    transform: translateX(0);
+  }
+  .sb-mobile-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 253, 247, 0.95);
+    border-top: 1px solid rgba(120, 100, 60, 0.15);
+    flex-shrink: 0;
+  }
+}

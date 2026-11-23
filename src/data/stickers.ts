@@ -21,18 +21,21 @@ export const STICKERS: StickerDef[] = [
   { id: 's12', text: 'Bug', color: '#ffc6ff' },
 ];
 
-// 印章
+// 印章：5 枚，颜色各不相同
 export const STAMPS: StickerDef[] = [
   { id: 'st1', text: '搞定', color: '#c0392b', textColor: '#fff' },
   { id: 'st2', text: '联名', color: '#2c3e50', textColor: '#fff' },
+  { id: 'st3', text: '打卡', color: '#2f7d5b', textColor: '#fff' },
+  { id: 'st4', text: '学到了', color: '#3b6fb5', textColor: '#fff' },
+  { id: 'st5', text: '下班', color: '#8e44ad', textColor: '#fff' },
 ];
 
-// 和纸胶带颜色
-export const TAPE_COLORS = [
-  '#ffd66b',
-  '#ff9a8b',
-  '#a8e6cf',
-  '#c5b8ff',
-  '#b5ead7',
-  '#ffb5a7',
+// 和纸胶带颜色（带名称，抽屉里悬停可见）
+export const TAPE_COLORS: { color: string; name: string }[] = [
+  { color: '#ffd66b', name: '奶油黄' },
+  { color: '#ff9a8b', name: '珊瑚粉' },
+  { color: '#a8e6cf', name: '抹茶绿' },
+  { color: '#c5b8ff', name: '雾紫' },
+  { color: '#b5ead7', name: '薄荷' },
+  { color: '#ffb5a7', name: '蜜桃' },
 ];
