@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { genRoomId, uid } from '../utils/id';
 import {
   loadProfile,
@@ -29,6 +29,36 @@ export default function Home({ onEnter }: { onEnter: () => void }) {
   const [lastRoom] = useState(() => loadLastRoom());
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // 卡片整体等比缩放，保证任何屏幕高度下都完整落在一屏内，不需要下滑
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [fitScale, setFitScale] = useState(1);
+  // 屏幕够宽才展示两侧装饰，窄屏隐藏，避免挤到表单
+  const [wide, setWide] = useState(() => window.innerWidth >= 980);
+  // 屏幕太矮时不铺散落的胶带贴纸，免得钻到表单后面
+  const [tall, setTall] = useState(() => window.innerHeight >= 700);
+  useEffect(() => {
+    const fit = () => {
+      const el = cardRef.current;
+      setWide(window.innerWidth >= 980);
+      setTall(window.innerHeight >= 700);
+      if (!el) return;
+      const scale = Math.min(
+        1,
+        (window.innerWidth - 24) / el.offsetWidth,
+        (window.innerHeight - 24) / el.offsetHeight,
+      );
+      setFitScale(scale);
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    const ro = new ResizeObserver(fit);
+    if (cardRef.current) ro.observe(cardRef.current);
+    return () => {
+      window.removeEventListener('resize', fit);
+      ro.disconnect();
+    };
+  }, [mode]);
 
   // 进入成功：记住昵称/贴纸色与上次房间，并把房号写进 URL
   const finish = (roomId: string, user: User) => {
@@ -122,48 +152,77 @@ export default function Home({ onEnter }: { onEnter: () => void }) {
 
   return (
     <div className="paper-bg" style={styles.wrap}>
-      {/* 装饰胶带 */}
-      <div style={styles.tape1} />
-      <div style={styles.tape2} />
-
-      <div style={styles.card} className="paper-cut">
-        <div style={styles.titleWrap}>
-          <h1 style={styles.title}>代码手账本</h1>
-          <p style={styles.subtitle}>Code Scrap · 两个人合写一页「今天写了啥」</p>
-        </div>
-
-        {/* 成品示例图：双人代码 + 贴纸 + 印章 */}
-        <div style={styles.previewWrap} aria-label="成品手账示例图">
-          <div style={styles.previewImage} aria-hidden>
-            {/* 左上代码卡 */}
-            <div style={styles.previewCodeA}>
-              <div style={styles.previewCodeLabel}>JS</div>
-              <pre style={styles.previewPre}>{`const bug = await fetch('/login');
-if (!bug.ok) { console.error('闪退'); }`}</pre>
-              <div style={styles.previewMeta}>
-                <span style={styles.previewNote}>修了登录闪退</span>
-                <span style={styles.previewTagRed}>Bug</span>
+      {/* 两侧手账装饰：左右各三件，纵向铺开 */}
+      {wide && (
+        <div style={styles.bgLayer} aria-label="手账装饰">
+          <div style={styles.bgColLeft}>
+            <div style={styles.bgCard}>
+              <div style={styles.bgCardTape} />
+              <div style={styles.bgCardLabel}>JS</div>
+              <pre style={styles.bgCardPre}>{`const res = await login();
+if (!res.ok) throw '闪退';`}</pre>
+              <div style={styles.bgCardMeta}>
+                <span style={styles.bgCardNote}>修了登录闪退</span>
+                <span style={styles.bgCardTag}>Bug</span>
               </div>
             </div>
-            {/* 左下贴纸 */}
-            <div style={styles.previewSticker}>今天没写代码</div>
-            {/* 右上印章 */}
-            <div style={styles.previewStamp}>已合并</div>
-            {/* 右下代码卡 */}
-            <div style={styles.previewCodeB}>
-              <div style={styles.previewCodeLabel}>JS</div>
-              <pre style={styles.previewPre}>{`const learn = () => '学会了防抖';
-console.log(learn());`}</pre>
-              <div style={styles.previewMeta}>
-                <span style={styles.previewNote}>面试手写</span>
-                <span style={styles.previewTagGreen}>学到了</span>
+
+            <div style={styles.bgSticker}>跑通了</div>
+
+            <div style={styles.bgCardSmall}>
+              <div style={styles.bgCardTapeYellow} />
+              <div style={styles.bgCardLabel}>PY</div>
+              <pre style={styles.bgCardPre}>{`items = list(set(items))`}</pre>
+              <div style={styles.bgCardMeta}>
+                <span style={styles.bgCardNote}>去重一行搞定</span>
+                <span style={styles.bgCardTagGreen}>学到了</span>
               </div>
             </div>
-            {/* 胶带装饰 */}
-            <div style={styles.previewTapeA} />
-            <div style={styles.previewTapeB} />
           </div>
+
+          <div style={styles.bgColRight}>
+            <div style={styles.bgStamp}>已合并</div>
+
+            <div style={styles.bgCardAlt}>
+              <div style={styles.bgCardTapeBlue} />
+              <div style={styles.bgCardLabel}>JS</div>
+              <pre style={styles.bgCardPre}>{`const learn = () => '防抖';
+console.log(learn());`}</pre>
+              <div style={styles.bgCardMeta}>
+                <span style={styles.bgCardNote}>面试手写</span>
+                <span style={styles.bgCardTagGreen}>学到了</span>
+              </div>
+            </div>
+
+            <div style={styles.bgMiniRow}>
+              <div style={styles.bgStampSmall}>LGTM</div>
+              <div style={styles.bgStickerAlt}>review 过了</div>
+            </div>
+          </div>
+
+          {/* 散落的胶带与贴纸点缀 */}
+          {tall && (
+            <>
+              <div style={styles.scatterTapeA} />
+              <div style={styles.scatterTapeB} />
+              <div style={styles.scatterTapeC} />
+              <div style={styles.scatterTapeD} />
+              <div style={styles.scatterTapeEdgeL} />
+              <div style={styles.scatterTapeEdgeR} />
+              <div style={styles.scatterStickerA}>今天 +1 行</div>
+              <div style={styles.scatterStickerB}>摸鱼 5 分钟</div>
+              <div style={styles.scatterStamp}>已上线</div>
+            </>
+          )}
         </div>
+      )}
+
+      <div style={{ ...styles.cardScale, transform: `scale(${fitScale})` }}>
+        <div ref={cardRef} style={styles.card} className="paper-cut">
+          <div style={styles.titleWrap}>
+            <h1 style={styles.title}>代码手账本</h1>
+            <p style={styles.subtitle}>Code Scrap · 两个人合写一页「今天写了啥」</p>
+          </div>
 
         {/* 继续上次房间 */}
         {lastRoom && (
@@ -255,6 +314,7 @@ console.log(learn());`}</pre>
         <p style={styles.hint}>
           提示：在另一台设备输入同房号即可实时协作 · 数据云端同步
         </p>
+        </div>
       </div>
     </div>
   );
@@ -270,27 +330,10 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     overflow: 'hidden',
   },
-  tape1: {
-    position: 'absolute',
-    top: '12%',
-    left: '8%',
-    width: 120,
-    height: 28,
-    background: 'rgba(232, 93, 74, 0.55)',
-    transform: 'rotate(-8deg)',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
-    zIndex: 1,
-  },
-  tape2: {
-    position: 'absolute',
-    bottom: '14%',
-    right: '10%',
-    width: 140,
-    height: 28,
-    background: 'rgba(47, 125, 91, 0.5)',
-    transform: 'rotate(6deg)',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
-    zIndex: 1,
+  cardScale: {
+    position: 'relative',
+    zIndex: 2,
+    transformOrigin: 'center center',
   },
   card: {
     width: 420,
@@ -299,51 +342,99 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     transform: 'rotate(-0.6deg)',
     position: 'relative',
-    zIndex: 2,
-    maxHeight: '92vh',
-    overflowY: 'auto',
   },
   titleWrap: { textAlign: 'center', marginBottom: 16 },
-  previewWrap: {
-    margin: '4px 0 22px',
-  },
-  previewImage: {
-    position: 'relative',
-    width: '100%',
-    height: 200,
-    background: '#fffdf7',
-    border: '1px solid rgba(120,100,60,0.2)',
-    borderRadius: 4,
-    overflow: 'hidden',
-    boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.8)',
-  },
-  previewCodeA: {
+  bgLayer: {
     position: 'absolute',
-    top: 20,
-    left: 16,
-    width: 170,
+    inset: 0,
+    display: 'flex',
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+    padding: 'clamp(22px, 4vh, 56px) clamp(28px, 5vw, 96px)',
+    overflow: 'hidden',
+    opacity: 0.78,
+    zIndex: 0,
+    pointerEvents: 'none',
+  },
+  bgColLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  bgColRight: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  bgCard: {
+    position: 'relative',
+    width: 200,
     background: '#1e1e2e',
     border: '2px solid #f0c674',
     borderRadius: 4,
-    padding: '10px 12px',
+    padding: '12px 12px 10px',
     color: '#e0def4',
     transform: 'rotate(-5deg)',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.18)',
+    boxShadow: '0 6px 16px rgba(0,0,0,0.16)',
   },
-  previewCodeB: {
-    position: 'absolute',
-    bottom: 18,
-    right: 16,
-    width: 170,
+  bgCardAlt: {
+    position: 'relative',
+    width: 200,
     background: '#1e1e2e',
     border: '2px solid #f0c674',
     borderRadius: 4,
-    padding: '10px 12px',
+    padding: '12px 12px 10px',
+    color: '#e0def4',
+    transform: 'rotate(4deg)',
+    boxShadow: '0 6px 16px rgba(0,0,0,0.16)',
+  },
+  bgCardSmall: {
+    position: 'relative',
+    width: 190,
+    background: '#1e1e2e',
+    border: '2px solid #7aa2f7',
+    borderRadius: 4,
+    padding: '12px 12px 10px',
     color: '#e0def4',
     transform: 'rotate(3deg)',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.18)',
+    boxShadow: '0 6px 16px rgba(0,0,0,0.16)',
   },
-  previewCodeLabel: {
+  bgCardTape: {
+    position: 'absolute',
+    top: -10,
+    left: '50%',
+    width: 62,
+    height: 18,
+    marginLeft: -31,
+    background: 'rgba(232, 93, 74, 0.6)',
+    transform: 'rotate(-4deg)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  },
+  bgCardTapeBlue: {
+    position: 'absolute',
+    top: -10,
+    left: '50%',
+    width: 62,
+    height: 18,
+    marginLeft: -31,
+    background: 'rgba(59, 111, 181, 0.55)',
+    transform: 'rotate(3deg)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  },
+  bgCardTapeYellow: {
+    position: 'absolute',
+    top: -10,
+    left: '50%',
+    width: 62,
+    height: 18,
+    marginLeft: -31,
+    background: 'rgba(224, 168, 44, 0.55)',
+    transform: 'rotate(-3deg)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+  },
+  bgCardLabel: {
     position: 'absolute',
     top: -8,
     left: 8,
@@ -356,7 +447,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 3,
     letterSpacing: 1,
   },
-  previewPre: {
+  bgCardPre: {
     margin: 0,
     fontFamily: 'var(--font-mono)',
     fontSize: 10.5,
@@ -364,7 +455,7 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
   },
-  previewMeta: {
+  bgCardMeta: {
     marginTop: 6,
     paddingTop: 6,
     borderTop: '1px dashed rgba(224,222,244,0.3)',
@@ -372,13 +463,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
   },
-  previewNote: {
+  bgCardNote: {
     color: '#fff3d1',
     fontFamily: 'var(--font-hand)',
     fontSize: 13,
     flex: 1,
   },
-  previewTagRed: {
+  bgCardTag: {
     background: '#f8e3df',
     color: '#b2382b',
     padding: '1px 6px',
@@ -387,7 +478,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontFamily: 'var(--font-hand)',
   },
-  previewTagGreen: {
+  bgCardTagGreen: {
     background: '#e2f1e6',
     color: '#2f7d5b',
     padding: '1px 6px',
@@ -396,53 +487,157 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontFamily: 'var(--font-hand)',
   },
-  previewSticker: {
-    position: 'absolute',
-    top: 120,
-    left: 90,
-    background: '#ffe1a8',
-    color: '#6b4a1a',
-    fontFamily: 'var(--font-hand)',
-    fontSize: 18,
-    fontWeight: 700,
-    padding: '10px 16px',
-    transform: 'rotate(4deg)',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
-    borderRadius: 3,
+  bgMiniRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
   },
-  previewStamp: {
-    position: 'absolute',
-    top: 50,
-    right: 24,
+  bgStampSmall: {
+    color: '#b2382b',
+    border: '2px solid rgba(178,56,43,0.6)',
+    fontFamily: 'var(--font-mono)',
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 1,
+    padding: '4px 9px',
+    borderRadius: 4,
+    transform: 'rotate(-5deg)',
+    opacity: 0.9,
+  },
+  bgStickerAlt: {
+    background: '#e4edf9',
+    color: '#3b6fb5',
+    fontFamily: 'var(--font-hand)',
+    fontSize: 15,
+    fontWeight: 700,
+    padding: '6px 12px',
+    borderRadius: 3,
+    transform: 'rotate(3deg)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  },
+  bgStamp: {
     color: '#2f7d5b',
     border: '3px solid #2f7d5b',
     fontFamily: 'var(--font-hand)',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 700,
-    padding: '6px 16px',
+    padding: '5px 14px',
     borderRadius: 4,
-    transform: 'rotate(8deg)',
-    opacity: 0.85,
-  },
-  previewTapeA: {
-    position: 'absolute',
-    top: 0,
-    left: 60,
-    width: 70,
-    height: 18,
-    background: 'rgba(232, 93, 74, 0.65)',
-    transform: 'rotate(-10deg)',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  },
-  previewTapeB: {
-    position: 'absolute',
-    bottom: 0,
-    right: 50,
-    width: 80,
-    height: 18,
-    background: 'rgba(59, 111, 181, 0.55)',
     transform: 'rotate(7deg)',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+    opacity: 0.9,
+  },
+  bgSticker: {
+    marginLeft: 26,
+    background: '#ffe1a8',
+    color: '#6b4a1a',
+    fontFamily: 'var(--font-hand)',
+    fontSize: 16,
+    fontWeight: 700,
+    padding: '7px 14px',
+    transform: 'rotate(4deg)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+    borderRadius: 3,
+  },
+  scatterTapeA: {
+    position: 'absolute',
+    top: '5%',
+    left: '32%',
+    width: 112,
+    height: 22,
+    background: 'rgba(232, 93, 74, 0.55)',
+    transform: 'rotate(-7deg)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  scatterTapeB: {
+    position: 'absolute',
+    top: '9%',
+    left: '60%',
+    width: 92,
+    height: 20,
+    background: 'rgba(59, 111, 181, 0.5)',
+    transform: 'rotate(6deg)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  scatterTapeC: {
+    position: 'absolute',
+    bottom: '9%',
+    left: '29%',
+    width: 122,
+    height: 22,
+    background: 'rgba(47, 125, 91, 0.45)',
+    transform: 'rotate(4deg)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  scatterTapeD: {
+    position: 'absolute',
+    bottom: '6%',
+    right: '27%',
+    width: 100,
+    height: 20,
+    background: 'rgba(224, 168, 44, 0.5)',
+    transform: 'rotate(-5deg)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  },
+  scatterTapeEdgeL: {
+    position: 'absolute',
+    top: '42%',
+    left: '1.2%',
+    width: 14,
+    height: 108,
+    background: 'rgba(232, 93, 74, 0.35)',
+    transform: 'rotate(3deg)',
+  },
+  scatterTapeEdgeR: {
+    position: 'absolute',
+    top: '48%',
+    right: '1%',
+    width: 14,
+    height: 96,
+    background: 'rgba(59, 111, 181, 0.35)',
+    transform: 'rotate(-4deg)',
+  },
+  scatterStickerA: {
+    position: 'absolute',
+    top: '4%',
+    left: '50%',
+    marginLeft: -56,
+    background: '#ffe1a8',
+    color: '#6b4a1a',
+    fontFamily: 'var(--font-hand)',
+    fontSize: 15,
+    fontWeight: 700,
+    padding: '6px 13px',
+    borderRadius: 3,
+    transform: 'rotate(-2deg)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  },
+  scatterStickerB: {
+    position: 'absolute',
+    bottom: '7%',
+    left: '37%',
+    background: '#f8e3df',
+    color: '#b2382b',
+    fontFamily: 'var(--font-hand)',
+    fontSize: 15,
+    fontWeight: 700,
+    padding: '6px 13px',
+    borderRadius: 3,
+    transform: 'rotate(-3deg)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  },
+  scatterStamp: {
+    position: 'absolute',
+    bottom: '6%',
+    right: '37%',
+    color: '#2f7d5b',
+    border: '2px solid rgba(47,125,91,0.7)',
+    fontFamily: 'var(--font-hand)',
+    fontSize: 15,
+    fontWeight: 700,
+    padding: '3px 11px',
+    borderRadius: 4,
+    transform: 'rotate(5deg)',
+    opacity: 0.85,
   },
   resume: {
     width: '100%',
